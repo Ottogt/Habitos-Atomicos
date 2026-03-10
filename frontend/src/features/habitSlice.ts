@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchHabits, type Habit } from './habitApi';
+import { fetchHabits, patchHabit, type Habit } from './habitApi';
 
 export const fetchHabitsThunk = createAsyncThunk(
   'habit/fetchHabits',
@@ -9,6 +9,25 @@ export const fetchHabitsThunk = createAsyncThunk(
       return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al cargar hábitos';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const markHabitDoneThunk = createAsyncThunk(
+  'habit/markHabitDone',
+  async (
+    { id, currentStreak }: { id: string; currentStreak: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const updated = await patchHabit(id, {
+        currentStreak: currentStreak + 1,
+        lastCompletedDate: new Date().toISOString(),
+      });
+      return updated;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al marcar hábito';
       return rejectWithValue(message);
     }
   }
@@ -46,6 +65,12 @@ const habitSlice = createSlice({
       .addCase(fetchHabitsThunk.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload as string;
+      })
+      .addCase(markHabitDoneThunk.fulfilled, (state, action) => {
+        const index = state.habits.findIndex((h) => h._id === action.payload._id);
+        if (index !== -1) {
+          state.habits[index] = action.payload;
+        }
       });
   },
 });
