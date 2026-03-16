@@ -31,3 +31,15 @@ export async function patchHabit(id: string, data: Partial<Habit>): Promise<Habi
   }
   return response.json();
 }
+
+/** Marca el hábito como hecho hoy. El servidor aplica la lógica de racha/reinicio. */
+export async function markHabitDone(id: string): Promise<Habit> {
+  const response = await fetch(`${HABITS_URL}/${id}/done`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Error al marcar hábito: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}

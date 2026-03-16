@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchHabits, patchHabit, type Habit } from './habitApi';
+import { fetchHabits, markHabitDone, type Habit } from './habitApi';
 
 export const fetchHabitsThunk = createAsyncThunk(
   'habit/fetchHabits',
@@ -16,15 +16,9 @@ export const fetchHabitsThunk = createAsyncThunk(
 
 export const markHabitDoneThunk = createAsyncThunk(
   'habit/markHabitDone',
-  async (
-    { id, currentStreak }: { id: string; currentStreak: number },
-    { rejectWithValue }
-  ) => {
+  async (id: string, { rejectWithValue }) => {
     try {
-      const updated = await patchHabit(id, {
-        currentStreak: currentStreak + 1,
-        lastCompletedDate: new Date().toISOString(),
-      });
+      const updated = await markHabitDone(id);
       return updated;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al marcar hábito';

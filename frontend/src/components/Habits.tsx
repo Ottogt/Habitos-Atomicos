@@ -53,14 +53,7 @@ export function Habits({ habits }: HabitsProps) {
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  dispatch(
-                    markHabitDoneThunk({
-                      id: habit._id,
-                      currentStreak: habit.currentStreak,
-                    })
-                  )
-                }
+                onClick={() => dispatch(markHabitDoneThunk(habit._id))}
                 className="shrink-0 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
               >
                 Hecho
