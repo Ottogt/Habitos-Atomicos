@@ -12,10 +12,15 @@ const habitSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    icon: {
+      type: String,
+      default: 'default',
+      trim: true,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      default: null, // Temporal para Semana 1; se usará cuando exista autenticación
+      default: null,
     },
     targetDays: {
       type: Number,
@@ -31,6 +36,14 @@ const habitSchema = new mongoose.Schema(
     lastCompletedDate: {
       type: Date,
       default: null,
+    },
+    completedDates: {
+      type: [Date],
+      default: [],
+    },
+    skippedDates: {
+      type: [Date],
+      default: [],
     },
   },
   {
