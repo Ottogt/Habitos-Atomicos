@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState } from '../store';
-import { fetchHabits, markHabitDone, unmarkHabit, skipHabit, addHabitDay, removeHabitDay, completeHabit, createHabit as createHabitApi, type Habit } from './habitApi';
+import { fetchHabits, markHabitDone, unmarkHabit, skipHabit, addHabitDay, removeHabitDay, completeHabit, createHabit as createHabitApi, patchHabit, deleteHabit as deleteHabitApi, type Habit } from './habitApi';
 
 export const fetchHabitsThunk = createAsyncThunk(
   'habit/fetchHabits',
@@ -125,6 +125,43 @@ export const completeHabitThunk = createAsyncThunk(
   }
 );
 
+export const updateHabitThunk = createAsyncThunk(
+  'habit/updateHabit',
+  async (
+    {
+      id,
+      data,
+    }: {
+      id: string;
+      data: { name?: string; description?: string; targetDays?: number; icon?: string };
+    },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const token = (getState() as RootState).auth.token;
+      const updated = await patchHabit(id, data, token);
+      return updated;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al actualizar hábito';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const deleteHabitThunk = createAsyncThunk(
+  'habit/deleteHabit',
+  async (id: string, { getState, rejectWithValue }) => {
+    try {
+      const token = (getState() as RootState).auth.token;
+      const result = await deleteHabitApi(id, token);
+      return result.habit._id;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al eliminar hábito';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 export type HabitStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
 interface HabitState {
@@ -196,6 +233,17 @@ const habitSlice = createSlice({
       })
       .addCase(createHabitThunk.fulfilled, (state, action) => {
         state.habits.unshift(action.payload);
+        state.error = null;
+      })
+      .addCase(updateHabitThunk.fulfilled, (state, action) => {
+        const index = state.habits.findIndex((h) => h._id === action.payload._id);
+        if (index !== -1) {
+          state.habits[index] = action.payload;
+        }
+        state.error = null;
+      })
+      .addCase(deleteHabitThunk.fulfilled, (state, action) => {
+        state.habits = state.habits.filter((h) => h._id !== action.payload);
         state.error = null;
       });
   },

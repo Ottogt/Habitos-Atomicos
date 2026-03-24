@@ -9,6 +9,24 @@ const isConnected = () => mongoose.connection.readyState === 1;
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+/**
+ * Semana 5: autorización por recurso — solo el dueño del hábito puede leerlo o modificarlo.
+ * @returns {boolean} false si ya se envió respuesta HTTP de error
+ */
+function assertHabitBelongsToUser(habit, req, res) {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ error: 'No autenticado' });
+    return false;
+  }
+  const ownerId = habit.userId != null ? String(habit.userId) : '';
+  const userId = String(req.user.id);
+  if (!ownerId || ownerId !== userId) {
+    res.status(403).json({ error: 'No autorizado para acceder a este hábito' });
+    return false;
+  }
+  return true;
+}
+
 /** Normaliza una fecha al inicio del día en UTC (solo fecha, sin hora). */
 const toDayUTC = (d) => {
   if (!d) return null;
@@ -39,6 +57,7 @@ const markHabitDone = async (req, res) => {
       if (!habit) {
         return res.status(404).json({ error: 'Hábito no encontrado' });
       }
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
       if (!habit.completedDates) habit.completedDates = [];
       addCompletedDate(habit, targetDay);
       recalcStreakFromCompletedDates(habit);
@@ -53,6 +72,7 @@ const markHabitDone = async (req, res) => {
     if (!habit) {
       return res.status(404).json({ error: 'Hábito no encontrado' });
     }
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     addCompletedDate(habit, targetDay);
     recalcStreakFromCompletedDates(habit);
     await habit.save();
@@ -121,6 +141,7 @@ const unmarkHabit = async (req, res) => {
     if (!isConnected()) {
       const habit = memoryHabits.find((h) => h._id === id);
       if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
       if (!habit.completedDates) habit.completedDates = [];
       habit.completedDates = habit.completedDates.filter(
         (d) => d && toDayUTC(d).getTime() !== targetDay.getTime()
@@ -133,6 +154,7 @@ const unmarkHabit = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ error: 'ID de hábito no válido' });
     const habit = await Habit.findById(id);
     if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     if (!habit.completedDates) habit.completedDates = [];
     habit.completedDates = habit.completedDates.filter(
       (d) => d && toDayUTC(d).getTime() !== targetDay.getTime()
@@ -156,6 +178,7 @@ const skipHabit = async (req, res) => {
     if (!isConnected()) {
       const habit = memoryHabits.find((h) => h._id === id);
       if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
       habit.completedDates = [];
       habit.skippedDates = [];
       habit.currentStreak = 0;
@@ -167,6 +190,7 @@ const skipHabit = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ error: 'ID de hábito no válido' });
     const habit = await Habit.findById(id);
     if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     habit.completedDates = [];
     habit.skippedDates = [];
     habit.currentStreak = 0;
@@ -189,6 +213,7 @@ const addHabitDay = async (req, res) => {
     if (!isConnected()) {
       const habit = memoryHabits.find((h) => h._id === id);
       if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
       if (!habit.completedDates) habit.completedDates = [];
       if (habit.completedDates.length >= (habit.targetDays || targetDays)) {
         return res.status(200).json(habit);
@@ -210,6 +235,7 @@ const addHabitDay = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ error: 'ID de hábito no válido' });
     const habit = await Habit.findById(id);
     if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     if (!habit.completedDates) habit.completedDates = [];
     const maxDays = habit.targetDays || 66;
     if (habit.completedDates.length >= maxDays) {
@@ -243,6 +269,7 @@ const completeHabit = async (req, res) => {
     if (!isConnected()) {
       const habit = memoryHabits.find((h) => h._id === id);
       if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
       const days = habit.targetDays || targetDays;
       habit.completedDates = [];
       for (let i = days - 1; i >= 0; i--) {
@@ -258,6 +285,7 @@ const completeHabit = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ error: 'ID de hábito no válido' });
     const habit = await Habit.findById(id);
     if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     const days = habit.targetDays || targetDays;
     habit.completedDates = [];
     for (let i = days - 1; i >= 0; i--) {
@@ -282,6 +310,7 @@ const removeHabitDay = async (req, res) => {
     if (!isConnected()) {
       const habit = memoryHabits.find((h) => h._id === id);
       if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
       if (habit.completedDates && habit.completedDates.length > 0) {
         habit.completedDates.pop();
         recalcStreakFromCompletedDates(habit);
@@ -293,6 +322,7 @@ const removeHabitDay = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ error: 'ID de hábito no válido' });
     const habit = await Habit.findById(id);
     if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     if (habit.completedDates && habit.completedDates.length > 0) {
       habit.completedDates.pop();
       recalcStreakFromCompletedDates(habit);
@@ -353,7 +383,7 @@ const getAllHabits = async (req, res) => {
   try {
     if (!isConnected()) {
       const list = req.user
-        ? memoryHabits.filter((h) => h.userId === req.user.id)
+        ? memoryHabits.filter((h) => String(h.userId) === String(req.user.id))
         : [...memoryHabits];
       return res.status(200).json(list);
     }
@@ -368,6 +398,12 @@ const getAllHabits = async (req, res) => {
 const getHabitById = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isConnected()) {
+      const habit = memoryHabits.find((h) => h._id === id);
+      if (!habit) return res.status(404).json({ error: 'Hábito no encontrado' });
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
+      return res.status(200).json(habit);
+    }
     if (!isValidObjectId(id)) {
       return res.status(400).json({ error: 'ID de hábito no válido' });
     }
@@ -375,6 +411,7 @@ const getHabitById = async (req, res) => {
     if (!habit) {
       return res.status(404).json({ error: 'Hábito no encontrado' });
     }
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     return res.status(200).json(habit);
   } catch (error) {
     return res.status(500).json({ error: 'Error al obtener el hábito' });
@@ -389,7 +426,8 @@ const updateHabit = async (req, res) => {
       if (!habit) {
         return res.status(404).json({ error: 'Hábito no encontrado' });
       }
-      const { name, description, targetDays, currentStreak, lastCompletedDate } = req.body;
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
+      const { name, description, targetDays, currentStreak, lastCompletedDate, icon } = req.body;
       if (name !== undefined) {
         if (typeof name !== 'string' || !name.trim()) {
           return res.status(400).json({ error: 'El nombre no puede estar vacío' });
@@ -400,17 +438,19 @@ const updateHabit = async (req, res) => {
       if (targetDays !== undefined) habit.targetDays = targetDays;
       if (currentStreak !== undefined) habit.currentStreak = currentStreak;
       if (lastCompletedDate !== undefined) habit.lastCompletedDate = lastCompletedDate;
+      if (icon !== undefined && typeof icon === 'string') habit.icon = icon.trim() || 'default';
       habit.updatedAt = new Date();
       return res.status(200).json(habit);
     }
     if (!isValidObjectId(id)) {
       return res.status(400).json({ error: 'ID de hábito no válido' });
     }
-    const { name, description, targetDays, currentStreak, lastCompletedDate } = req.body;
+    const { name, description, targetDays, currentStreak, lastCompletedDate, icon } = req.body;
     const habit = await Habit.findById(id);
     if (!habit) {
       return res.status(404).json({ error: 'Hábito no encontrado' });
     }
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     if (name !== undefined) {
       if (typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({ error: 'El nombre no puede estar vacío' });
@@ -421,6 +461,7 @@ const updateHabit = async (req, res) => {
     if (targetDays !== undefined) habit.targetDays = targetDays;
     if (currentStreak !== undefined) habit.currentStreak = currentStreak;
     if (lastCompletedDate !== undefined) habit.lastCompletedDate = lastCompletedDate;
+    if (icon !== undefined && typeof icon === 'string') habit.icon = icon.trim() || 'default';
     await habit.save();
     return res.status(200).json(habit);
   } catch (error) {
@@ -439,6 +480,7 @@ const patchHabit = async (req, res) => {
       if (!habit) {
         return res.status(404).json({ error: 'Hábito no encontrado' });
       }
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
       const updates = req.body;
       if (updates.name !== undefined) {
         if (typeof updates.name !== 'string' || !updates.name.trim()) {
@@ -450,6 +492,9 @@ const patchHabit = async (req, res) => {
       if (updates.targetDays !== undefined) habit.targetDays = updates.targetDays;
       if (updates.currentStreak !== undefined) habit.currentStreak = updates.currentStreak;
       if (updates.lastCompletedDate !== undefined) habit.lastCompletedDate = updates.lastCompletedDate;
+      if (updates.icon !== undefined && typeof updates.icon === 'string') {
+        habit.icon = updates.icon.trim() || 'default';
+      }
       habit.updatedAt = new Date();
       return res.status(200).json(habit);
     }
@@ -460,6 +505,7 @@ const patchHabit = async (req, res) => {
     if (!habit) {
       return res.status(404).json({ error: 'Hábito no encontrado' });
     }
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
     const updates = req.body;
     if (updates.name !== undefined) {
       if (typeof updates.name !== 'string' || !updates.name.trim()) {
@@ -471,6 +517,9 @@ const patchHabit = async (req, res) => {
     if (updates.targetDays !== undefined) habit.targetDays = updates.targetDays;
     if (updates.currentStreak !== undefined) habit.currentStreak = updates.currentStreak;
     if (updates.lastCompletedDate !== undefined) habit.lastCompletedDate = updates.lastCompletedDate;
+    if (updates.icon !== undefined && typeof updates.icon === 'string') {
+      habit.icon = updates.icon.trim() || 'default';
+    }
     await habit.save();
     return res.status(200).json(habit);
   } catch (error) {
@@ -484,13 +533,23 @@ const patchHabit = async (req, res) => {
 const deleteHabit = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isConnected()) {
+      const idx = memoryHabits.findIndex((h) => h._id === id);
+      if (idx === -1) return res.status(404).json({ error: 'Hábito no encontrado' });
+      const habit = memoryHabits[idx];
+      if (!assertHabitBelongsToUser(habit, req, res)) return;
+      memoryHabits.splice(idx, 1);
+      return res.status(200).json({ message: 'Hábito eliminado correctamente', habit });
+    }
     if (!isValidObjectId(id)) {
       return res.status(400).json({ error: 'ID de hábito no válido' });
     }
-    const habit = await Habit.findByIdAndDelete(id);
+    const habit = await Habit.findById(id);
     if (!habit) {
       return res.status(404).json({ error: 'Hábito no encontrado' });
     }
+    if (!assertHabitBelongsToUser(habit, req, res)) return;
+    await Habit.findByIdAndDelete(id);
     return res.status(200).json({ message: 'Hábito eliminado correctamente', habit });
   } catch (error) {
     return res.status(500).json({ error: 'Error al eliminar el hábito' });

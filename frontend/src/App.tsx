@@ -8,6 +8,8 @@ import { AuthLayout } from './components/AuthLayout';
 import { LoginForm } from './components/LoginForm';
 import { RegisterForm } from './components/RegisterForm';
 import { AddHabitForm } from './components/AddHabitForm';
+import { EditHabitForm } from './components/EditHabitForm';
+import type { Habit } from './features/habitApi';
 import './App.css';
 
 function App() {
@@ -16,6 +18,7 @@ function App() {
   const { user } = useSelector((state: RootState) => state.auth);
   const [view, setView] = useState<View>('login');
   const [showAddHabitModal, setShowAddHabitModal] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
   useEffect(() => {
     if (user) dispatch(fetchHabitsThunk());
@@ -84,7 +87,44 @@ function App() {
             <Habits
               habits={habits}
               onAddHabit={() => setShowAddHabitModal(true)}
+              onEditHabit={(h) => setEditingHabit(h)}
             />
+          </div>
+        )}
+        {editingHabit && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            onClick={() => setEditingHabit(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-modal-title"
+          >
+            <div
+              className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 bg-green-600 rounded-t-xl">
+                <h2 id="edit-modal-title" className="text-xl font-semibold text-white">
+                  Editar hábito
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setEditingHabit(null)}
+                  className="p-2 rounded-lg text-white hover:bg-green-500"
+                  aria-label="Cerrar"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-4">
+                <EditHabitForm
+                  habit={editingHabit}
+                  onSuccess={() => setEditingHabit(null)}
+                />
+              </div>
+            </div>
           </div>
         )}
         {showAddHabitModal && (

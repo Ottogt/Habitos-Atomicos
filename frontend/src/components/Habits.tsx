@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from '../store';
-import { addHabitDayThunk, skipHabitThunk, completeHabitThunk } from '../features/habitSlice';
+import { addHabitDayThunk, skipHabitThunk, completeHabitThunk, deleteHabitThunk } from '../features/habitSlice';
 import type { Habit } from '../features/habitApi';
 
 const ICON_MAP: Record<string, string> = {
@@ -26,9 +26,10 @@ function progressBarColor(porcentaje: number): string {
 interface HabitsProps {
   habits: Habit[];
   onAddHabit?: () => void;
+  onEditHabit?: (habit: Habit) => void;
 }
 
-export function Habits({ habits, onAddHabit }: HabitsProps) {
+export function Habits({ habits, onAddHabit, onEditHabit }: HabitsProps) {
   const dispatch = useDispatch<AppDispatch>();
 
   if (habits.length === 0) {
@@ -85,7 +86,40 @@ export function Habits({ habits, onAddHabit }: HabitsProps) {
                 {getIcon(habit.icon)}
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-gray-900 truncate">{habit.name}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-semibold text-gray-900 truncate">{habit.name}</h3>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {onEditHabit && (
+                      <button
+                        type="button"
+                        onClick={() => onEditHabit(habit)}
+                        className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-green-700"
+                        title="Editar hábito"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                          <path d="m15 5 4 4" />
+                        </svg>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`¿Eliminar el hábito "${habit.name}"?`)) {
+                          dispatch(deleteHabitThunk(habit._id));
+                        }
+                      }}
+                      className="p-1.5 rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600"
+                      title="Eliminar hábito"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className="text-sm text-gray-600">Días realizados:</span>
                   <span className="font-medium text-gray-900">{diasRealizados}</span>

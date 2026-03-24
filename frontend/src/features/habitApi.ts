@@ -46,7 +46,7 @@ export async function createHabit(
 
 export async function patchHabit(
   id: string,
-  data: Partial<Habit>,
+  data: Partial<Pick<Habit, 'name' | 'description' | 'targetDays' | 'icon'>>,
   token?: string | null
 ): Promise<Habit> {
   const response = await fetch(`${HABITS_URL}/${id}`, {
@@ -56,6 +56,17 @@ export async function patchHabit(
   });
   if (!response.ok) {
     throw new Error(`Error al actualizar el hábito: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function deleteHabit(id: string, token?: string | null): Promise<{ habit: Habit }> {
+  const response = await fetch(`${HABITS_URL}/${id}`, {
+    method: 'DELETE',
+    headers: headers(token),
+  });
+  if (!response.ok) {
+    throw new Error(`Error al eliminar el hábito: ${response.status} ${response.statusText}`);
   }
   return response.json();
 }
