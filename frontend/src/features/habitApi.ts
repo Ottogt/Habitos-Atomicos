@@ -1,4 +1,5 @@
-const HABITS_URL = 'http://localhost:3001/habits';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+const HABITS_URL = `${API_BASE}/habits`;
 
 export interface Habit {
   _id: string;

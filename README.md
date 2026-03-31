@@ -53,4 +53,10 @@ Variables: el frontend asume API en `http://localhost:3001` (ver `habitApi.ts` y
 | **Modo memoria** | `DELETE` y `GET /:id` soportan hábitos en memoria cuando Mongo no está conectado. |
 | **PATCH con `icon`** | Actualización parcial permite cambiar nombre, descripción, meta de días e icono. |
 
-**Rama Git:** `semana5` (incluye lo de Semana 4 más estos cambios).
+**Rama Git:** `semana5` / `semana-5` (incluye Semana 4–5; `semana-5` añade Vercel y `VITE_API_URL`).
+
+---
+
+## Despliegue en Vercel
+
+Instrucciones paso a paso: [`DEPLOY_VERCEL.md`](DEPLOY_VERCEL.md). Necesitas **dos proyectos** en Vercel (root `backend` y root `frontend`) y variables de entorno indicadas ahí.

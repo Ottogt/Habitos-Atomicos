@@ -36,6 +36,10 @@ function getMongoConfig() {
 }
 
 const connectDB = async (retries = 3) => {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
   const { uri, options } = getMongoConfig();
 
   for (let attempt = 1; attempt <= retries; attempt++) {
