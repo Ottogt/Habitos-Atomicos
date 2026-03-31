@@ -1,4 +1,8 @@
 node_modules/
+
+# Copia local solo-backend (publicar como repo aparte); no versionar en el monorepo
+Habitos-Atomicos-Backend/
+
 .env
 *.log
 .DS_Store
