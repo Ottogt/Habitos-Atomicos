@@ -48,16 +48,24 @@ function createApp() {
   app.use(express.json());
 
   if (process.env.VERCEL) {
-    let dbReady = false;
     app.use(async (req, res, next) => {
-      if (dbReady) return next();
       try {
         await connectDB();
+        next();
       } catch (e) {
         console.error('MongoDB (serverless):', e.message);
+        const hint =
+          'Revisa MONGODB_URI en Vercel, usuario/contraseña y en Atlas → Network Access (permite 0.0.0.0/0 o las IPs de Vercel).';
+        if (String(req.originalUrl || '').includes('/api/health')) {
+          return res.status(503).json({
+            status: 'error',
+            message: 'API sin conexión a MongoDB',
+            detail: e.message,
+            hint,
+          });
+        }
+        return res.status(503).json({ error: 'Base de datos no disponible.', hint, detail: e.message });
       }
-      dbReady = true;
-      next();
     });
   }
 

@@ -40,6 +40,7 @@ const register = async (req, res) => {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ error: error.message });
     }
+    console.error('register:', error);
     return res.status(500).json({ error: 'Error al registrar usuario' });
   }
 };
