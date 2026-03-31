@@ -4,7 +4,7 @@ const habitsRouter = require('./routes/habits');
 const authRouter = require('./routes/auth');
 const connectDB = require('./config/db');
 
-function getAllowedOrigins() {
+function getExplicitAllowedOrigins() {
   const extra = process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '';
   const defaults = ['http://localhost:5173', 'http://localhost:5174'];
   const fromEnv = extra
@@ -14,13 +14,37 @@ function getAllowedOrigins() {
   return [...new Set([...defaults, ...fromEnv])];
 }
 
+/** Previews y producción en *.vercel.app (HTTPS). */
+function isVercelAppOrigin(origin) {
+  if (!origin || typeof origin !== 'string') return false;
+  try {
+    const u = new URL(origin);
+    if (u.protocol !== 'https:') return false;
+    const host = u.hostname.toLowerCase();
+    return host === 'vercel.app' || host.endsWith('.vercel.app');
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Crea la app Express (sin listen). En Vercel se conecta Mongo en la primera petición.
  */
 function createApp() {
   const app = express();
 
-  app.use(cors({ origin: getAllowedOrigins(), credentials: true }));
+  const explicitOrigins = getExplicitAllowedOrigins();
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin) return callback(null, true);
+        if (explicitOrigins.includes(origin)) return callback(null, true);
+        if (isVercelAppOrigin(origin)) return callback(null, true);
+        return callback(null, false);
+      },
+      credentials: true,
+    })
+  );
   app.use(express.json());
 
   if (process.env.VERCEL) {

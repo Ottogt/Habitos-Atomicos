@@ -31,7 +31,7 @@ No puedes subir el código desde aquí sin iniciar sesión en tu cuenta. Sigue e
 
 ## 3. CORS
 
-Tras el primer deploy del frontend, copia su URL y añádela al backend en `ALLOWED_ORIGINS` (o vuelve a desplegar el backend si ya la pusiste).
+El backend acepta automáticamente cualquier origen `https://*.vercel.app` además de `ALLOWED_ORIGINS` / `FRONTEND_URL` y localhost del dev. Para un dominio propio (no Vercel), añádelo en `ALLOWED_ORIGINS`.
 
 ## 4. Rama Git `semana-5`
 
